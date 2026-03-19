@@ -14,8 +14,10 @@ library(kknn)  # Knearest neighbors
 library(nnet)  # neural networks
 library(discrim)  # Naive Bayes
 library(klaR)  # Naive Bayes
+
 ### Load in the data
-load('data/employment_education_all.Rda')
+data_file <- here::here("day16","data","employment_education_all.Rda")
+load(data_file)
 
 ### STEP 0: Set up the data for modeling
 ### Set the unemployment threshold for the model
