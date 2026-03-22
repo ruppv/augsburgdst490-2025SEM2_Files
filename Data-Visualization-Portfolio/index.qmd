@@ -1,5 +1,16 @@
 ---
-title: "Data-Visualization-Portfolio"
+title: "Vincent Rupp Portfolio"
+
+about: 
+  template: jolla
+  links:
+    - icon: linkedin
+      text: LinkedIn
+      href: https://www.linkedin.com/in/vincentrupp1/
+    - icon: envelope
+      text: Contact me
+      href: mailto:vjrupp49@gmail.com
+
 listing:
   contents: posts
   sort: "date desc"
@@ -7,8 +18,7 @@ listing:
   categories: true
   sort-ui: false
   filter-ui: false
+
 page-layout: full
 title-block-banner: true
 ---
-
-
