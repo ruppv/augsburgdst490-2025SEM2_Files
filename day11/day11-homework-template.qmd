@@ -38,7 +38,9 @@ TYPE YOUR RESPONSE HERE
 ## Problem 1 (10 points)
 Review [Chapter 18 in Modern Data Science with R](https://mdsr-book.github.io/mdsr2e/ch-spatial2.html).  Now that we have had a few days on shapefiles and maps, what interesting things did you learn about working with shapefiles?
 
-TYPE RESPONSE BELOW
+A big thing that stood out to me was that shapefiles aren't just map making tools, but they are also data that can be directly involved in analysis, without being used as a map.  For example, you could find distances, areas, and lengths all directly from functions like st_distance() or st_area().  This is a different way of thinking about this data because I immediately associate mpas with strictly visual, but shapefiles act as a map in number form, and they are way more versatile.
+
+Another things that was very interesting, and seemed useful, was spatial joins.  Instead of joining through columns (like usual), it is a join based on actual geographic location.  That's a completely new and different way of thinking about joing compared to what we've previously done in R.  With that being said, it is quite a powerful tool, datasets can be connected that don't actually have shared variables, they just share the same geographic space.  Overall, this read introduced shapefiles as more than just a static map, it showed that they are versatile building blocks for analysis.
 
 ## Problem 2 (10 points)
 Read Chapters 1 and 2 and skim a few other chapters of interest from [Analyzing US Census Data: Methods Maps, and Models in R](https://walker-data.com/census-r/index.html). What did you learn about the US Census Data and how could you use that to level up your data science skills?

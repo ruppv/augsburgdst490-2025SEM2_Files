@@ -4,12 +4,12 @@ library(tidyverse)
 ### Read in the USDA unemployment and education data, join, and save
 
 ## Read
-employment <- readxl::read_excel('data/Unemployment.xlsx',
+employment <- readxl::read_excel('day16/data/Unemployment.xlsx',
                                  skip = 4,
                                  sheet = 'UnemploymentMedianIncome')
 
 
-education <- readxl::read_excel('data/Education.xlsx',
+education <- readxl::read_excel('day16/data/Education.xlsx',
                                 skip = 3,
                                 sheet = 'Education 1970 to 2022') |>
   rename(FIPS_Code = 1,
@@ -45,4 +45,4 @@ unemployment_education_all_data <- employment2 |>
   inner_join(education2,by=c("FIPS_Code","Year"))
 
 ### Save the data
-save(unemployment_education_all_data,file ='data/employment_education_all.Rda')
+save(unemployment_education_all_data,file ='day16/data/employment_education_all.Rda')

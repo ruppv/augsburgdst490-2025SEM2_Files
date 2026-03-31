@@ -1,0 +1,333 @@
+---
+title: "Day 7 Homework, DST 490"
+author: "Vincent Rupp"
+format:
+  html:
+    embed-resources: true
+editor: source
+---
+
+```{r}
+#| echo: false
+#| message: false
+
+library(tidyverse)
+
+# Load in datasets you will need when rendering the file.
+
+# Unemployment and education data from the USDA. See day07_README.md for data sources
+
+# Name of the uemployment file
+unemployment_file <- "Unemployment.xlsx"
+
+unemployment <- readxl::read_excel(unemployment_file,
+                                   skip = 4,
+                                   sheet = 'UnemploymentMedianIncome')
+
+# Name of the file to read in:
+education_file <- "Education.xlsx"
+
+
+education <- readxl::read_excel(education_file ,
+                                skip = 3,
+                                sheet = 'Education 1970 to 2022')
+
+```
+
+
+
+Link to google doc for instructions: [LINK](https://docs.google.com/document/d/1KfKKnusjZ4H2zL1x9caBJSl-QA5b4rHosojLG1ITQM0/edit?usp=sharing)
+
+
+
+<div style="background-color: #f0f8ff; border-left: 5px solid #007acc; padding: 10px;">
+## (20 points) Code of Ethics
+I'm interested in understanding your process for completing all the questions in this assignment. Please tell me about the tools and resources—including any use of AI—that helped you with your work. Please remember to follow the outlined [Code of Ethics](https://docs.google.com/document/d/1lMvzPTGUAaMnH0KPibShQ1ualuo8uqICCexkh8zmsW8/edit?usp=sharing).  Because our understanding of how to work with AI tools is emerging, please err on the side of including too much detail rather than too little.
+
+
+#3: I used ChatGPT to get the needed code to put at the top of the R chunk so that nothing is printed in the rendered doc.
+
+
+Prompt:
+what do I add to an R chunk in a quarto at the top so that nothing prints its all just silent?
+
+Response: ✅ Use this at the top of your chunk
+#| echo: false
+#| warning: false
+#| message: false
+#| results: 'hide'
+(...)
+
+#5: I used ChatGPT to clear up the error I was getting in filter:
+
+Prompt:
+why would:   filter(State = 'UT') |>, be giving me an error?
+
+Response:
+(...)
+✅ Correct version
+filter(State == "UT")
+(...)
+
+## (10 points) 1. Reading Advanced R
+Read [Chapter 9 of Advanced R by Wickham](https://adv-r.hadley.nz/functionals.html). What did you learn about functionals and what questions do you still have about them?
+
+I learned that functionals are functions that take other functions as their input.  Functionals are often a better and more straightforward approach to for loops.  The main benefit of functionals is that they are a very logically sound, and easy to understand way of acheiving the same thing a for loop would acheive.  Some of the functionals mentioned were map() (and all it's related functionals), modify(), and walk().  
+
+The main question I still have is when to use a for loop vs a functional.  This is obviously a very vague question that doesn't have a clean answer, but it is not immediately obvious to me yet when to use which.  I also could see map() nested within itself getting harder to read than a loop, but maybe not until a certain point?
+
+
+## (20 points) 2. Functional programming for Hennepin County
+Discuss with your Hennepin County project group: how do you foresee yourself using nest, map, and functions on the dataset? Assign someone to try it out to see if they can get some progress!
+
+The first thing that comes to mind is using nest() and map() to help our efficiency.  The data we are using is at the census tract leve, but we need to be able to analyze differences not just across census tracts, but municipalities.  We can use nest() to group our data by municipality, and then store each municipality's tract level data as its own dataset.
+
+Once we have that set up we can use map() to easily apply the same functions to each municipality simultaneously. For example, we might have a function that calculates summary statistics like mean/median participation gaps, and then uses map() to apply that function to every municipality at once.
+
+This would be extremely useful to get instant comparison across cities, time periods, or other metrics, and since it eliminates repetitive work, it would keep everything consistent.  Overall, these functionals will improve our efficiency in work quite a lot, and there are lot of great applications in our project,
+
+## (20 points) 3. Average unemployment workflow
+
+In class we computed the average unemployment for each FIPS code. Instead, start with the `unemployment` dataset to write a workflow that computes the average unemployment for each state.
+
+
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| results: 'hide'
+
+
+#Background from class
+### DST 490, Day 7
+
+# Topics covered: Introduction to mapping (iteration)
+library(tidyverse)
+library(readxl)
+### Task 1: Compute the average unemployment from 2008 - 2012.  Here is some starter code:
+
+unemployment |>
+  select(starts_with("Unemployment_rate")) |> 
+  pivot_longer(cols=everything()) |>
+  separate_wider_position(name,c(name=18,Year = 4)) |>
+  mutate(Year = as.numeric(Year)) |>
+  filter(Year %in% 2018:2022) |> 
+  summarize(avg_unemploy = mean(value,na.rm=TRUE)) |>
+  pull(avg_unemploy)
+
+### Task 1a: Now let's define average unemployment function
+compute_unemployment <- function(input_data,year_span) {
+  
+  avg_val <- input_data |>
+    select(starts_with("Unemployment_rate")) |>
+    pivot_longer(cols = everything()) |>
+    separate_wider_position(name, c(name = 18, Year = 4)) |>
+    mutate(Year = as.numeric(Year)) |>
+    filter(Year %in% year_span) |>
+    summarize(avg_unemploy = mean(value, na.rm = TRUE)) |>
+    pull(avg_unemploy)
+  
+  return(avg_val)
+}
+
+compute_unemployment(unemployment,2018:2022)
+
+
+### Task 2: compute this for each FIPS code in the US
+
+# Create a nested list organized by the FIPS code
+nested_unemployment <- unemployment |>
+  group_by(FIPS_Code) |>
+  nest()
+
+
+# Let's take a peek at the data here:
+glimpse(nested_unemployment$data[[1]])
+
+
+# Try this out ....
+compute_unemployment(
+  input_data = nested_unemployment$data[[1]],
+  year_span = 2018:2022
+  )
+
+# Task 2a: Use a nested data frame w/ map_dbl to compute the average unemployment for each of the different localities in the dataset
+unemployment_span <- nested_unemployment |>
+  mutate(unemployment_pct_2008_2012 = map_dbl(.x=data,
+                                     .f=~compute_unemployment(.x,2018:2022))) |>
+  select(-data)  # Get rid of the data column
+
+glimpse(unemployment_span)
+
+### Task 3: join with education data from that same timespan:
+# First let's make the education dataset a little smaller to work with
+# We need a double select so that we first get the FIPS code, and the span of years, and then also variables that are percentages:
+
+education_small <- education |>
+  select(`FIPS Code`,State,ends_with("2008-12")) |> 
+  select(`FIPS Code`,State,starts_with("Percent") ) 
+  
+
+# Next we need to join the unemployment data to the education data
+joined_dataset <- unemployment_span |>
+  inner_join(education_small,by=c("FIPS_Code"="FIPS Code"))
+
+# Plot the unemployment data with the educational rate:
+joined_dataset |>
+  ggplot(aes(x=`Percent of adults with less than a high school diploma, 2008-12`,
+             y = unemployment_pct_2008_2012)) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  labs(y="Average Unemployment Rate (%, 2018-2022)")
+  
+
+```
+
+```{r}
+q3_compute_unemployment <- function(input_data,year_span) {
+  
+  avg_val <- input_data |>
+    select(starts_with("Unemployment_rate")) |>
+    pivot_longer(cols = everything()) |>
+    separate_wider_position(name, c(name = 18, Year = 4)) |>
+    mutate(Year = as.numeric(Year)) |>
+    filter(Year %in% year_span) |>
+    summarize(avg_unemploy = mean(value, na.rm = TRUE)) |>
+    pull(avg_unemploy)
+  
+  return(avg_val)
+}
+
+q3_compute_unemployment(unemployment,2018:2022)
+
+# Create a nested list organized by the State
+q3_nested_unemployment <- unemployment |>
+  group_by(State) |>
+  nest()
+
+q3_unemployment_span <- q3_nested_unemployment |>
+  mutate(unemployment_pct_2008_2012 = map_dbl(.x=data,
+                                     .f=~compute_unemployment(.x,2018:2022))) |>
+  select(-data)  # Get rid of the data column
+
+glimpse(q3_unemployment_span)
+```
+
+
+
+## (15 points) 4. Recreate this plot
+From `joined_dataset`, recreate this exact plot shown here in the [assignment instructions](https://docs.google.com/document/d/1KfKKnusjZ4H2zL1x9caBJSl-QA5b4rHosojLG1ITQM0/edit?usp=sharing).
+ 
+
+
+
+
+```{r}
+joined_dataset |>
+  pivot_longer(
+    cols = starts_with("Percent"),
+    names_to = "education",
+    values_to = "percent"
+  ) |>
+  ggplot(aes(x = percent,
+             y = unemployment_pct_2008_2012)) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  facet_wrap(~education) +
+  labs(
+    x = "Education",
+    y = "Avg Unemployment Rate"
+  )
+```
+
+
+
+## (40 points) 5. New visualization for state unemployment data
+Using the `joined_dataset` (`unemployment_span` and `education_small` data sets) to answer the following questions:
+
+  a. First, **ON YOUR OWN**, using the joined_dataset, write a function called `state_plot` that has as its output, the average unemployment rate with an educational factor for a given state.  A sample plot is shown in the [assignment instructions](https://docs.google.com/document/d/1KfKKnusjZ4H2zL1x9caBJSl-QA5b4rHosojLG1ITQM0/edit?usp=sharing). Your plot needs to include the state as a title.
+
+For this first step, you are not allowed to utilize any additional websites or AI. I want to see what you can do on your own first - so make a good-faith effort to resolve any errors in your work. Note that the code chunk evaluation option is set to false (`#| eval: false`) so that the quarto file won't throw an error when rendering.^[If you are successful in making a visualization, then change the option from `false` to `true`.]
+
+
+
+```{r}
+#| eval: false
+#| message: false
+
+joined_dataset |>
+  filter(State = 'UT') |>
+
+  ggplot(aes(x = `Percent of adults with a bachelor's degree or higher, 2008-12`,
+             y = unemployment_pct_2008_2012)) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  labs(
+    x = "Percent of adults with a bachelor's degree or higher, 2008-12",
+    y = "Avg Unemployment Rate"
+  )
+```
+
+
+
+  b. Reflect on your work.  What were the errors that you received? What skills and knowledge gaps can you identify?
+
+I am struggling with the data verbs, specifically trying to get the syntax correct in the filter function.
+
+  c. If you have errors in your visualization, make corrections to resolve them:
+
+
+
+```{r}
+#| message: false
+joined_dataset |>
+  filter(State == "UT") |>
+
+  ggplot(aes(x = `Percent of adults with a bachelor's degree or higher, 2008-12`,
+             y = unemployment_pct_2008_2012)) +
+  labs(title = "UT") +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  labs(
+    x = "Percent of adults with a bachelor's degree or higher, 2008-12",
+    y = "Avg Unemployment Rate"
+  )
+
+
+```
+
+
+
+  d. As you resolved the errors, what were your sources? Be sure to complete the Code of Ethics.
+  
+  See CoE
+    
+  e. Now I want you to modify your visualization with a different plot geom. The website [from data to viz](https://www.data-to-viz.com/) is useful for inspiration.  You may need to load / install additional libraries as needed.
+    
+
+
+```{r}
+#| message: false
+
+joined_dataset |>
+  filter(State == "UT") |>
+
+  ggplot(aes(x = `Percent of adults with a bachelor's degree or higher, 2008-12`,
+             y = unemployment_pct_2008_2012)) +
+  labs(title = "UT") +
+  geom_density_2d() +
+  geom_smooth(method = 'lm') +
+  labs(
+    x = "Percent of adults with a bachelor's degree or higher, 2008-12",
+    y = "Avg Unemployment Rate"
+  )
+```
+
+
+   
+  f. What trends do you see in the visualization? What is your explanation for these trends? 
+
+The obvious trend is the negative relationship between unemployment rate and adults with a degree.  This is an expected trend, as it makes sense that the higher % of people with a Bachelor's degree, the higher % of employed people there would be.  Using this density plot shows us something cool, that the center of the data appears to be around 20-25% with a degree, and unemployment a little above 3%.  What makes this so interesting to me, is this is clearly below the line of best fit, which I would expect the biggest cluster of data to be closer to said line.    It is clear that that the outliers are on the side of high unemployment, low degree %, which would explain the biggest cluster of data appearing below the line. 
+
+
